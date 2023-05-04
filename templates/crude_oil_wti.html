@@ -1,0 +1,99 @@
+{% extends '_base.html' %}
+<!-- {% load static %} -->
+
+{% block extra_css %}
+
+<link rel="stylesheet" href="https://unpkg.com/tabulator-tables@4.9.3/dist/css/tabulator.min.css">
+{% endblock %}
+
+{% block content %}
+<div>
+  <h1>Crude Oil (WTI)</h1>
+</div>
+
+<div>
+  <div id='crude_oil_wti_table'></div>
+
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script src="https://unpkg.com/tabulator-tables@4.9.3/dist/js/tabulator.min.js"></script>
+
+<script>
+  console.log(Tabulator);
+  try {
+
+    var table = new Tabulator("#crude_oil_wti_table", {
+      layout: "fitColumns",
+      ajaxURL: "{% url 'commodity_price_table' %}",//この記載でtabulatorがajaxにてhttp getを送信しているとのこと
+      ajaxResponse: function (url, params, response) {//json.data seems to be in response
+
+        console.log(response);
+        var parsedData = [];
+
+        for (var i = 0; i < response.length; i++) {
+          // for (var i = 0; i < 50; i++) {
+          var item = response[i];
+          parsedData.push({
+            'timestamp': item.timestamp,
+            'commodity_name': item.commodity_name,
+            'price': parseFloat(item.price),
+            'change_price': parseFloat(item.change_price),
+            'change_rate': parseFloat(item.change_rate),
+            'updated_at': item.updated_at,
+          });
+        }
+        console.log(parsedData);
+
+        return parsedData;//ajaxResponse is callback function to pass data to hte table created by tabulator
+      },
+      pagination: "local",
+      paginationSize: 200,
+      initialSort: [{ column: "timestamp", dir: "desc" }],
+      columns: [
+        {
+          title: "Date<br>(UTC)",
+          field: "timestamp",
+          // width: "20%",
+          sorter: "string",
+          formatter: "datetime",
+          formatterParams: { outputFormat: "YYYY/MM/DD" }
+        },
+        {
+          title: "Price",
+          field: "price",
+          // width: "20%",
+          sorter: "number",
+          formatter: "money",
+          formatterParams: { symnol: "$" },
+          align: "right",
+        },
+        {
+          title: "Price Diff",
+          field: "change_price",
+          sorter: "number",
+          formatter: "money",
+          formatterParams: { symbol: "$" },
+          align: "right"
+        },
+        {
+          title: "Price Diff Rate<br>(%)",
+          field: "change_rate",
+          // width: "20%",
+          sorter: "number",
+          // formatter: "percent",
+          align: "right"
+        },
+
+      ]
+
+    })
+  } catch (error) {
+    console.error('Tabulator error:', error);
+  }
+
+</script>
+
+{% endblock %}
